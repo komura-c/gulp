@@ -1,8 +1,13 @@
-extends /inc/_base
+extends /inc/layout/_base
 
 block meta
   title トップページ
   meta(name="description", content="トップページ")
 
 block content
-  p トップページ
+  main
+    include /inc/pages/home/_hero
+    include /inc/pages/home/_about
+    include /inc/pages/home/_use
+    include /inc/pages/home/_template
+    include /inc/pages/home/_cv

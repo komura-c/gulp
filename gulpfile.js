@@ -11,11 +11,21 @@ const flexBugsFixes = require("postcss-flexbugs-fixes");
 const declarationSorter = require("css-declaration-sorter");
 const cssWring = require("csswring");
 
+const webpack = require("webpack");
+const webpackStream = require("webpack-stream");
+const webpackConfig = require("./webpack.config");
+
+const imagemin = require("gulp-imagemin");
+const imageminPngquant = require("imagemin-pngquant");
+const imageminMozjpeg = require("imagemin-mozjpeg");
+
 const browserSync = require("browser-sync").create();
 
 const paths = {
   pug: "./src/pug/**/*.pug",
   scss: "./src/scss/**/*.scss",
+  js: "./src/js/**/*.js",
+  image: "./src/images/**/*",
 };
 
 const html = () => {
@@ -42,7 +52,26 @@ const css = () => {
     .pipe(browserSync.stream());
 };
 
-const build = parallel(html, css);
+const js = () => {
+  return webpackStream(webpackConfig, webpack).pipe(dest("./dist/assets/js/"));
+};
+
+const image = () => {
+  return src(paths.image)
+    .pipe(
+      imagemin([
+        imageminPngquant({ quality: [0.65, 0.8] }),
+        imageminMozjpeg({ quality: "80" }),
+        imagemin.gifsicle(),
+        imagemin.mozjpeg(),
+        imagemin.optipng(),
+        imagemin.svgo(),
+      ])
+    )
+    .pipe(dest("./dist/assets/images/"));
+};
+
+const build = parallel(html, css, js, image);
 
 const server = () => {
   browserSync.init({ server: "./dist" });
@@ -57,6 +86,14 @@ const watchFiles = () => {
     css();
     cb();
   });
+  watch(paths.js, function (cb) {
+    js();
+    cb();
+  });
+  watch(paths.image, function (cb) {
+    image();
+    cb();
+  });
   watch(["./dist/**/*.html"], function (cb) {
     browserSync.reload();
     cb();
@@ -65,6 +102,9 @@ const watchFiles = () => {
 
 exports.html = html;
 exports.css = css;
+exports.js = js;
+exports.image = image;
+
 exports.build = build;
 
 exports.default = series(build, parallel(server, watchFiles));
